@@ -1,0 +1,29 @@
+# API
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9
+
+# Database
+sqlalchemy==2.0.35
+asyncpg==0.29.0
+alembic==1.13.2
+
+# Task Queue
+celery[redis]==5.4.0
+redis==5.1.0
+
+# OCR
+pytesseract==0.3.10
+opencv-python-headless==4.10.0.84
+numpy==2.1.1
+Pillow==10.4.0
+
+# PDF
+pdf2image==1.17.0
+PyMuPDF==1.24.10
+
+# Utils
+python-dotenv==1.0.1
+pydantic-settings==2.5.2
+boto3==1.35.19
+httpx==0.27.2
