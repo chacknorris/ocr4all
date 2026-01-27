@@ -1,6 +1,8 @@
+from __future__ import annotations
 import enum
 import uuid
 from datetime import datetime
+from typing import Optional, List, Dict
 
 from sqlalchemy import (
     Boolean,
@@ -52,12 +54,12 @@ class DocumentCategory(Base):
     )
     code: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    parent_id: Mapped[uuid.UUID | None] = mapped_column(
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    parent_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True), ForeignKey("document_categories.id", ondelete="SET NULL"), nullable=True
     )
-    icon: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    color: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    icon: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    color: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(
@@ -65,7 +67,7 @@ class DocumentCategory(Base):
     )
 
     # Self-referential relationship for hierarchy
-    parent: Mapped["DocumentCategory | None"] = relationship(
+    parent: Mapped[Optional["DocumentCategory"]] = relationship(
         "DocumentCategory", remote_side="DocumentCategory.id", backref="children"
     )
 
@@ -82,8 +84,8 @@ class ProcessingStats(Base):
     documents_processed: Mapped[int] = mapped_column(Integer, default=0)
     documents_failed: Mapped[int] = mapped_column(Integer, default=0)
     pages_processed: Mapped[int] = mapped_column(Integer, default=0)
-    avg_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
-    avg_processing_time_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    avg_confidence: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    avg_processing_time_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     extractions_count: Mapped[int] = mapped_column(Integer, default=0)
     corrections_count: Mapped[int] = mapped_column(Integer, default=0)
 
@@ -97,11 +99,11 @@ class ExtractionTemplate(Base):
     )
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     code: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     doc_type: Mapped[DocumentType] = mapped_column(Enum(DocumentType), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     priority: Mapped[int] = mapped_column(Integer, default=0)  # Higher = checked first
-    classification_keywords: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    classification_keywords: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=False
     )
@@ -110,7 +112,7 @@ class ExtractionTemplate(Base):
     )
 
     # Relationships
-    fields: Mapped[list["TemplateField"]] = relationship(
+    fields: Mapped[List["TemplateField"]] = relationship(
         "TemplateField", back_populates="template", cascade="all, delete-orphan"
     )
 
@@ -132,8 +134,8 @@ class TemplateField(Base):
     pattern_flags: Mapped[str] = mapped_column(String(20), default="IGNORECASE")
     required: Mapped[bool] = mapped_column(Boolean, default=False)
     order: Mapped[int] = mapped_column(Integer, default=0)
-    validation_rules: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
-    post_processing: Mapped[str | None] = mapped_column(String(50), nullable=True)  # e.g., "normalize_rut"
+    validation_rules: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    post_processing: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # e.g., "normalize_rut"
 
     # Relationships
     template: Mapped["ExtractionTemplate"] = relationship("ExtractionTemplate", back_populates="fields")
@@ -145,7 +147,7 @@ class Document(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    organization_id: Mapped[uuid.UUID | None] = mapped_column(
+    organization_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True), nullable=True, index=True
     )  # For multi-tenancy
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -160,21 +162,21 @@ class Document(Base):
     )
     page_count: Mapped[int] = mapped_column(Integer, default=1)
     storage_path: Mapped[str] = mapped_column(Text, nullable=False)
-    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
-    metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    metadata_: Mapped[Optional[dict]] = mapped_column("metadata", JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
     )
-    processed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    processed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     # Relationships
-    ocr_results: Mapped[list["OCRResult"]] = relationship(
+    ocr_results: Mapped[List["OCRResult"]] = relationship(
         "OCRResult", back_populates="document", cascade="all, delete-orphan"
     )
-    extractions: Mapped[list["Extraction"]] = relationship(
+    extractions: Mapped[List["Extraction"]] = relationship(
         "Extraction", back_populates="document", cascade="all, delete-orphan"
     )
 
@@ -190,10 +192,10 @@ class OCRResult(Base):
     )
     page_number: Mapped[int] = mapped_column(Integer, nullable=False)
     raw_text: Mapped[str] = mapped_column(Text, nullable=False)
-    confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
-    word_data: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
-    processing_time_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    image_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    confidence: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    word_data: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    processing_time_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    image_path: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=False
     )
@@ -212,12 +214,12 @@ class Extraction(Base):
         UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False
     )
     field_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    extracted_value: Mapped[str | None] = mapped_column(Text, nullable=True)
-    confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
+    extracted_value: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    confidence: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     manually_corrected: Mapped[bool] = mapped_column(Boolean, default=False)
-    corrected_value: Mapped[str | None] = mapped_column(Text, nullable=True)
-    source_page: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    bounding_box: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    corrected_value: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    source_page: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    bounding_box: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
     extraction_method: Mapped[str] = mapped_column(
         String(20), default="regex", nullable=False
     )  # "regex", "llm", "manual"
@@ -232,5 +234,5 @@ class Extraction(Base):
     document: Mapped["Document"] = relationship("Document", back_populates="extractions")
 
     @property
-    def final_value(self) -> str | None:
+    def final_value(self) -> Optional[str]:
         return self.corrected_value if self.manually_corrected else self.extracted_value

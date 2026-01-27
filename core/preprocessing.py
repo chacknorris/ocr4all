@@ -1,4 +1,6 @@
+from __future__ import annotations
 from dataclasses import dataclass
+from typing import Optional
 
 import cv2
 import numpy as np
@@ -11,11 +13,11 @@ class PreprocessConfig:
     denoise: bool = True
     binarize: bool = True
     remove_borders: bool = False
-    resize_factor: float | None = None
-    target_dpi: int | None = 300
+    resize_factor: Optional[float] = None
+    target_dpi: Optional[int] = 300
 
 
-def preprocess_image(image: Image.Image, config: PreprocessConfig | None = None) -> Image.Image:
+def preprocess_image(image: Image.Image, config: Optional[PreprocessConfig] = None) -> Image.Image:
     """Apply preprocessing pipeline to improve OCR accuracy."""
     if config is None:
         config = PreprocessConfig()

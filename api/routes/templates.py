@@ -1,3 +1,5 @@
+from __future__ import annotations
+from typing import Optional, List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -21,7 +23,7 @@ router = APIRouter(prefix="/templates", tags=["templates"])
 
 @router.get("", response_model=TemplateListResponse)
 async def list_templates(
-    doc_type: DocumentType | None = None,
+    doc_type: Optional[DocumentType] = None,
     active_only: bool = True,
     db: AsyncSession = Depends(get_db),
 ):

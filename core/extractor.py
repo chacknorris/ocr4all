@@ -1,9 +1,10 @@
+from __future__ import annotations
 """
 Metadata extraction engine with configurable templates.
 """
 import re
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Optional, Tuple
 
 from models.document import FieldType
 
@@ -11,10 +12,10 @@ from models.document import FieldType
 @dataclass
 class ExtractedField:
     field_name: str
-    value: str | None
+    value: Optional[str]
     confidence: float
-    source_page: int | None = None
-    raw_match: str | None = None
+    source_page: Optional[int] = None
+    raw_match: Optional[str] = None
 
 
 # Post-processing functions
@@ -86,8 +87,8 @@ def extract_field(
     pattern: str,
     field_type: FieldType = FieldType.TEXT,
     flags: str = "IGNORECASE",
-    post_processing: str | None = None,
-) -> tuple[str | None, float]:
+    post_processing: Optional[str] = None,
+) -> Tuple[Optional[str], float]:
     """
     Extract a single field from text using regex pattern.
 
@@ -199,7 +200,7 @@ def extract_with_template(
     return results
 
 
-def classify_document(text: str, templates: list[dict]) -> str | None:
+def classify_document(text: str, templates: list[dict]) -> Optional[str]:
     """
     Classify document based on keyword matching against templates.
 

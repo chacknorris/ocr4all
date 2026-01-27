@@ -1,8 +1,9 @@
+from __future__ import annotations
 """
 Authentication and organization management API routes.
 """
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Optional, List, Dict
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
@@ -45,8 +46,8 @@ class OrganizationResponse(BaseModel):
 
 class ApiKeyCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
-    scopes: list[str] = Field(default=["read"])
-    expires_at: datetime | None = None
+    scopes: List[str] = Field(default=["read"])
+    expires_at: Optional[datetime] = None
     rate_limit: int = Field(default=1000, ge=1, le=100000)
 
 
@@ -54,10 +55,10 @@ class ApiKeyResponse(BaseModel):
     id: UUID
     name: str
     key_prefix: str
-    scopes: list[str]
+    scopes: List[str]
     is_active: bool
-    last_used_at: datetime | None
-    expires_at: datetime | None
+    last_used_at: Optional[datetime] = None
+    expires_at: Optional[datetime] = None
     rate_limit: int
     created_at: datetime
 
@@ -72,17 +73,17 @@ class ApiKeyCreated(ApiKeyResponse):
 class WebhookCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     url: str = Field(..., min_length=1)
-    events: list[str] = Field(default=["document.processed"])
+    events: List[str] = Field(default=["document.processed"])
     retry_count: int = Field(default=3, ge=0, le=10)
     timeout_seconds: int = Field(default=30, ge=5, le=120)
-    headers: dict[str, str] | None = None
+    headers: Optional[Dict[str, str]] = None
 
 
 class WebhookResponse(BaseModel):
     id: UUID
     name: str
     url: str
-    events: list[str]
+    events: List[str]
     is_active: bool
     retry_count: int
     timeout_seconds: int
@@ -95,11 +96,11 @@ class WebhookResponse(BaseModel):
 class WebhookDeliveryResponse(BaseModel):
     id: UUID
     event_type: str
-    response_status: int | None
-    response_time_ms: int | None
+    response_status: Optional[int] = None
+    response_time_ms: Optional[int] = None
     attempt_count: int
     success: bool
-    error_message: str | None
+    error_message: Optional[str] = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -109,7 +110,7 @@ class ApiKeyUsageStats(BaseModel):
     total_requests: int
     requests_last_hour: int
     requests_last_24h: int
-    avg_response_time_ms: float | None
+    avg_response_time_ms: Optional[float] = None
     error_rate: float
 
 
@@ -204,7 +205,7 @@ async def create_api_key(
     )
 
 
-@router.get("/api-keys", response_model=list[ApiKeyResponse])
+@router.get("/api-keys", response_model=List[ApiKeyResponse])
 async def list_api_keys(
     auth: RequireAdmin,
     db: AsyncSession = Depends(get_db),
@@ -356,7 +357,7 @@ async def create_webhook(
     return webhook
 
 
-@router.get("/webhooks", response_model=list[WebhookResponse])
+@router.get("/webhooks", response_model=List[WebhookResponse])
 async def list_webhooks(
     auth: RequireAdmin,
     db: AsyncSession = Depends(get_db),
@@ -512,7 +513,7 @@ async def toggle_webhook(
 
 @router.get(
     "/webhooks/{webhook_id}/deliveries",
-    response_model=list[WebhookDeliveryResponse],
+    response_model=List[WebhookDeliveryResponse],
 )
 async def list_webhook_deliveries(
     webhook_id: UUID,

@@ -1,3 +1,4 @@
+from __future__ import annotations
 from fastapi import APIRouter
 
 from core.ocr import get_tesseract_languages, get_tesseract_version

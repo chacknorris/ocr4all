@@ -1,4 +1,6 @@
+from __future__ import annotations
 from datetime import datetime
+from typing import Optional, List
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -14,8 +16,8 @@ class TemplateFieldCreate(BaseModel):
     pattern_flags: str = "IGNORECASE"
     required: bool = False
     order: int = 0
-    validation_rules: dict | None = None
-    post_processing: str | None = None
+    validation_rules: Optional[dict] = None
+    post_processing: Optional[str] = None
 
 
 class TemplateFieldResponse(BaseModel):
@@ -29,27 +31,27 @@ class TemplateFieldResponse(BaseModel):
     pattern_flags: str
     required: bool
     order: int
-    validation_rules: dict | None
-    post_processing: str | None
+    validation_rules: Optional[dict] = None
+    post_processing: Optional[str] = None
 
 
 class TemplateCreate(BaseModel):
     name: str
     code: str
-    description: str | None = None
+    description: Optional[str] = None
     doc_type: DocumentType
     is_active: bool = True
     priority: int = 0
-    classification_keywords: list[str] | None = None
-    fields: list[TemplateFieldCreate] = []
+    classification_keywords: Optional[List[str]] = None
+    fields: List[TemplateFieldCreate] = []
 
 
 class TemplateUpdate(BaseModel):
-    name: str | None = None
-    description: str | None = None
-    is_active: bool | None = None
-    priority: int | None = None
-    classification_keywords: list[str] | None = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    is_active: Optional[bool] = None
+    priority: Optional[int] = None
+    classification_keywords: Optional[List[str]] = None
 
 
 class TemplateResponse(BaseModel):
@@ -58,19 +60,19 @@ class TemplateResponse(BaseModel):
     id: UUID
     name: str
     code: str
-    description: str | None
+    description: Optional[str] = None
     doc_type: DocumentType
     is_active: bool
     priority: int
-    classification_keywords: list[str] | None
+    classification_keywords: Optional[List[str]] = None
     created_at: datetime
     updated_at: datetime
 
 
 class TemplateDetailResponse(TemplateResponse):
-    fields: list[TemplateFieldResponse] = []
+    fields: List[TemplateFieldResponse] = []
 
 
 class TemplateListResponse(BaseModel):
-    items: list[TemplateResponse]
+    items: List[TemplateResponse]
     total: int

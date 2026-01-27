@@ -1,3 +1,5 @@
+from __future__ import annotations
+from typing import Optional, List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -13,31 +15,31 @@ router = APIRouter(prefix="/categories", tags=["categories"])
 class CategoryCreate(BaseModel):
     code: str
     name: str
-    description: str | None = None
-    parent_id: UUID | None = None
-    icon: str | None = None
-    color: str | None = None
+    description: Optional[str] = None
+    parent_id: Optional[UUID] = None
+    icon: Optional[str] = None
+    color: Optional[str] = None
     sort_order: int = 0
 
 
 class CategoryUpdate(BaseModel):
-    name: str | None = None
-    description: str | None = None
-    parent_id: UUID | None = None
-    icon: str | None = None
-    color: str | None = None
-    is_active: bool | None = None
-    sort_order: int | None = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    parent_id: Optional[UUID] = None
+    icon: Optional[str] = None
+    color: Optional[str] = None
+    is_active: Optional[bool] = None
+    sort_order: Optional[int] = None
 
 
 class CategoryResponse(BaseModel):
     id: UUID
     code: str
     name: str
-    description: str | None
-    parent_id: UUID | None
-    icon: str | None
-    color: str | None
+    description: Optional[str] = None
+    parent_id: Optional[UUID] = None
+    icon: Optional[str] = None
+    color: Optional[str] = None
     is_active: bool
     sort_order: int
 
@@ -46,10 +48,10 @@ class CategoryResponse(BaseModel):
 
 
 class CategoryTreeResponse(CategoryResponse):
-    children: list["CategoryTreeResponse"] = []
+    children: List["CategoryTreeResponse"] = []
 
 
-@router.get("", response_model=list[CategoryResponse])
+@router.get("", response_model=List[CategoryResponse])
 async def list_categories(
     active_only: bool = True,
     db: AsyncSession = Depends(get_db),
@@ -69,7 +71,7 @@ async def list_categories(
     return [CategoryResponse.model_validate(c) for c in categories]
 
 
-@router.get("/tree", response_model=list[CategoryTreeResponse])
+@router.get("/tree", response_model=List[CategoryTreeResponse])
 async def get_category_tree(
     db: AsyncSession = Depends(get_db),
 ):

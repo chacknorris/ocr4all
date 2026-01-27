@@ -1,6 +1,8 @@
+from __future__ import annotations
 import asyncio
 import io
 from datetime import datetime
+from typing import Optional
 from uuid import UUID
 
 from celery import shared_task
@@ -248,7 +250,7 @@ def extract_metadata(self, document_id: str):
 
 
 @shared_task
-def reprocess_all_documents(doc_type: str | None = None):
+def reprocess_all_documents(doc_type: Optional[str] = None):
     """Reprocess all documents with current templates. Useful after template updates."""
     db = get_sync_session()
 
@@ -280,9 +282,9 @@ def extract_with_llm_task(
     self,
     document_id: str,
     provider: str = "ollama",
-    model: str | None = None,
-    base_url: str | None = None,
-    api_key: str | None = None,
+    model: Optional[str] = None,
+    base_url: Optional[str] = None,
+    api_key: Optional[str] = None,
 ):
     """
     Extract metadata using LLM for complex or ambiguous documents.

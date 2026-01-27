@@ -1,15 +1,17 @@
+from __future__ import annotations
 import io
 from pathlib import Path
+from typing import Optional, Union
 
 import fitz  # PyMuPDF
 from PIL import Image
 
 
 def pdf_to_images(
-    pdf_path: str | Path | bytes,
+    pdf_path: Union[str, Path, bytes],
     dpi: int = 300,
-    first_page: int | None = None,
-    last_page: int | None = None,
+    first_page: Optional[int] = None,
+    last_page: Optional[int] = None,
 ) -> list[Image.Image]:
     """
     Convert PDF pages to PIL Images.
@@ -45,7 +47,7 @@ def pdf_to_images(
     return images
 
 
-def get_pdf_page_count(pdf_path: str | Path | bytes) -> int:
+def get_pdf_page_count(pdf_path: Union[str, Path, bytes]) -> int:
     """Get the number of pages in a PDF."""
     if isinstance(pdf_path, bytes):
         doc = fitz.open(stream=pdf_path, filetype="pdf")
@@ -57,7 +59,7 @@ def get_pdf_page_count(pdf_path: str | Path | bytes) -> int:
     return count
 
 
-def extract_pdf_metadata(pdf_path: str | Path | bytes) -> dict:
+def extract_pdf_metadata(pdf_path: Union[str, Path, bytes]) -> dict:
     """Extract metadata from PDF."""
     if isinstance(pdf_path, bytes):
         doc = fitz.open(stream=pdf_path, filetype="pdf")

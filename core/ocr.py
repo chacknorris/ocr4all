@@ -1,5 +1,7 @@
+from __future__ import annotations
 import time
 from dataclasses import dataclass, field
+from typing import Optional, Tuple
 
 import pytesseract
 from PIL import Image
@@ -26,12 +28,12 @@ class OCRConfig:
 @dataclass
 class OCROutput:
     text: str
-    confidence: float | None
-    word_data: list[dict] | None
+    confidence: Optional[float]
+    word_data: Optional[list[dict]]
     processing_time_ms: int
 
 
-def run_ocr(image: Image.Image, config: OCRConfig | None = None) -> OCROutput:
+def run_ocr(image: Image.Image, config: Optional[OCRConfig] = None) -> OCROutput:
     """
     Run OCR on an image with preprocessing.
 
@@ -81,7 +83,7 @@ def _build_tesseract_config(config: OCRConfig) -> str:
 
 def _extract_word_data(
     image: Image.Image, tess_config: str, lang: str
-) -> tuple[list[dict], float | None]:
+) -> Tuple[list[dict], Optional[float]]:
     """Extract word-level OCR data with bounding boxes and confidence."""
     try:
         data = pytesseract.image_to_data(

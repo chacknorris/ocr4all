@@ -1,3 +1,4 @@
+from __future__ import annotations
 from fastapi import APIRouter, File, Form, UploadFile, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 

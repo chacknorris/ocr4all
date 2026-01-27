@@ -1,7 +1,9 @@
+from __future__ import annotations
 import csv
 import io
 import json
 from datetime import datetime
+from typing import Optional, List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -18,8 +20,8 @@ router = APIRouter(prefix="/export", tags=["export"])
 @router.get("/documents")
 async def export_documents(
     format: str = Query("json", enum=["json", "csv"]),
-    status: DocumentStatus | None = None,
-    doc_type: DocumentType | None = None,
+    status: Optional[DocumentStatus] = None,
+    doc_type: Optional[DocumentType] = None,
     include_extractions: bool = True,
     include_ocr: bool = False,
     db: AsyncSession = Depends(get_db),
@@ -82,7 +84,7 @@ async def export_single_document(
 @router.get("/extractions")
 async def export_extractions(
     format: str = Query("json", enum=["json", "csv"]),
-    doc_type: DocumentType | None = None,
+    doc_type: Optional[DocumentType] = None,
     only_corrected: bool = False,
     db: AsyncSession = Depends(get_db),
 ):
@@ -135,7 +137,7 @@ async def export_extractions(
         return _records_to_csv(records, f"extractions_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv")
 
 
-def _export_json(documents: list[Document], include_extractions: bool, include_ocr: bool):
+def _export_json(documents: List[Document], include_extractions: bool, include_ocr: bool):
     """Export documents to JSON format."""
     data = []
 
@@ -180,7 +182,7 @@ def _export_json(documents: list[Document], include_extractions: bool, include_o
     )
 
 
-def _export_csv(documents: list[Document], include_extractions: bool):
+def _export_csv(documents: List[Document], include_extractions: bool):
     """Export documents to CSV format with flattened extractions."""
 
     # Collect all unique field names
@@ -247,7 +249,7 @@ def _export_csv(documents: list[Document], include_extractions: bool):
     )
 
 
-def _records_to_csv(records: list[dict], filename: str):
+def _records_to_csv(records: List[dict], filename: str):
     """Convert records to CSV streaming response."""
     if not records:
         return StreamingResponse(

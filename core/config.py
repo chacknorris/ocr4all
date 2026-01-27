@@ -1,10 +1,12 @@
+from __future__ import annotations
 from functools import lru_cache
+from typing import Optional
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
     # Database
-    database_url: str = "postgresql+asyncpg://ocr4all:ocr4all@localhost:5432/ocr4all"
+    database_url: str = "postgresql+asyncpg://ocr4all:ocr4all@localhost:5433/ocr4all"
 
     # Redis
     redis_url: str = "redis://localhost:6379/0"
@@ -20,14 +22,14 @@ class Settings(BaseSettings):
     s3_bucket: str = "ocr4all"
 
     # Tesseract
-    tesseract_cmd: str | None = None
+    tesseract_cmd: Optional[str] = None
     tesseract_lang: str = "spa+eng"
 
     # LLM
     llm_provider: str = "ollama"  # "ollama" or "openai"
     llm_model: str = "llama3.2"
     llm_base_url: str = "http://localhost:11434"
-    llm_api_key: str | None = None
+    llm_api_key: Optional[str] = None
     llm_temperature: float = 0.1
     llm_max_tokens: int = 1000
     llm_timeout: int = 60

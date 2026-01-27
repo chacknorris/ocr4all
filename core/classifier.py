@@ -1,10 +1,11 @@
+from __future__ import annotations
 """
 Document classifier with scoring-based detection.
 Supports keyword matching, pattern matching, and weighted scoring.
 """
 import re
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Optional
 
 
 @dataclass
@@ -50,7 +51,7 @@ class DocumentClassifier:
     Final confidence = total_score / max_possible_score
     """
 
-    def __init__(self, templates: list[TemplateClassifier] | None = None):
+    def __init__(self, templates: Optional[list[TemplateClassifier]] = None):
         self.templates = templates or []
         self._compile_patterns()
 
@@ -71,7 +72,7 @@ class DocumentClassifier:
                 flags = 0 if rule.case_sensitive else re.IGNORECASE
                 rule._compiled = re.compile(rule.pattern, flags)
 
-    def classify(self, text: str) -> ClassificationResult | None:
+    def classify(self, text: str) -> Optional[ClassificationResult]:
         """
         Classify document text against all templates.
 

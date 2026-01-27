@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 Synchronous webhook utilities for Celery workers.
 """
@@ -5,7 +6,7 @@ import hashlib
 import hmac
 import json
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 from uuid import UUID
 
 import httpx
@@ -27,7 +28,7 @@ def sign_payload(payload: str, secret: str) -> str:
 def trigger_webhook_sync(
     event_type: str,
     payload: dict[str, Any],
-    organization_id: UUID | None,
+    organization_id: Optional[UUID],
     db: Session,
 ) -> list[WebhookDelivery]:
     """
@@ -158,9 +159,9 @@ def trigger_document_event(
     event_type: str,
     document_id: UUID,
     doc_type: str,
-    organization_id: UUID | None,
+    organization_id: Optional[UUID],
     db: Session,
-    extra_data: dict | None = None,
+    extra_data: Optional[dict] = None,
 ):
     """
     Convenience function to trigger document-related webhook events.

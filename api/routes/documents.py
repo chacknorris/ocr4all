@@ -1,3 +1,5 @@
+from __future__ import annotations
+from typing import Optional, List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -23,8 +25,8 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 async def list_documents(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    status: DocumentStatus | None = None,
-    doc_type: DocumentType | None = None,
+    status: Optional[DocumentStatus] = None,
+    doc_type: Optional[DocumentType] = None,
     db: AsyncSession = Depends(get_db),
 ):
     """List all documents with pagination and filters."""
@@ -117,7 +119,7 @@ async def delete_document(
     return {"message": "Document deleted"}
 
 
-@router.get("/{document_id}/ocr", response_model=list[OCRResultResponse])
+@router.get("/{document_id}/ocr", response_model=List[OCRResultResponse])
 async def get_ocr_results(
     document_id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -134,7 +136,7 @@ async def get_ocr_results(
     return [OCRResultResponse.model_validate(r) for r in ocr_results]
 
 
-@router.get("/{document_id}/extractions", response_model=list[ExtractionResponse])
+@router.get("/{document_id}/extractions", response_model=List[ExtractionResponse])
 async def get_extractions(
     document_id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -232,7 +234,7 @@ async def reprocess_document(
 async def extract_with_llm_endpoint(
     document_id: UUID,
     provider: str = Query(default="ollama", description="LLM provider: ollama or openai"),
-    model: str | None = Query(default=None, description="Model name (e.g., llama3.2, gpt-4)"),
+    model: Optional[str] = Query(default=None, description="Model name (e.g., llama3.2, gpt-4)"),
     db: AsyncSession = Depends(get_db),
 ):
     """

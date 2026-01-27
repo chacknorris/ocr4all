@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 Authentication models for API keys and users.
 """
@@ -5,6 +6,7 @@ import secrets
 import uuid
 from datetime import datetime
 from enum import Enum
+from typing import Optional, List, Tuple
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -29,16 +31,16 @@ class Organization(Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     slug: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    settings: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    settings: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=False
     )
 
     # Relationships
-    api_keys: Mapped[list["ApiKey"]] = relationship(
+    api_keys: Mapped[List["ApiKey"]] = relationship(
         "ApiKey", back_populates="organization", cascade="all, delete-orphan"
     )
-    webhooks: Mapped[list["Webhook"]] = relationship(
+    webhooks: Mapped[List["Webhook"]] = relationship(
         "Webhook", back_populates="organization", cascade="all, delete-orphan"
     )
 
@@ -58,8 +60,8 @@ class ApiKey(Base):
     key_prefix: Mapped[str] = mapped_column(String(8), nullable=False)  # For identification
     scopes: Mapped[list] = mapped_column(JSONB, default=["read"])
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    last_used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_used_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     rate_limit: Mapped[int] = mapped_column(Integer, default=1000)  # Requests per hour
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=False
@@ -69,7 +71,7 @@ class ApiKey(Base):
     organization: Mapped["Organization"] = relationship("Organization", back_populates="api_keys")
 
     @staticmethod
-    def generate_key() -> tuple[str, str, str]:
+    def generate_key() -> Tuple[str, str, str]:
         """Generate a new API key. Returns (full_key, key_hash, key_prefix)."""
         import hashlib
         key = f"ocr4all_{secrets.token_urlsafe(32)}"
@@ -97,9 +99,9 @@ class ApiKeyUsage(Base):
     endpoint: Mapped[str] = mapped_column(String(200), nullable=False)
     method: Mapped[str] = mapped_column(String(10), nullable=False)
     status_code: Mapped[int] = mapped_column(Integer, nullable=False)
-    response_time_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
-    user_agent: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    response_time_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    ip_address: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
+    user_agent: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=False, index=True
     )
@@ -122,7 +124,7 @@ class Webhook(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     retry_count: Mapped[int] = mapped_column(Integer, default=3)
     timeout_seconds: Mapped[int] = mapped_column(Integer, default=30)
-    headers: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # Custom headers
+    headers: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)  # Custom headers
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=False
     )
@@ -132,7 +134,7 @@ class Webhook(Base):
 
     # Relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="webhooks")
-    deliveries: Mapped[list["WebhookDelivery"]] = relationship(
+    deliveries: Mapped[List["WebhookDelivery"]] = relationship(
         "WebhookDelivery", back_populates="webhook", cascade="all, delete-orphan"
     )
 
@@ -154,12 +156,12 @@ class WebhookDelivery(Base):
     )
     event_type: Mapped[str] = mapped_column(String(50), nullable=False)
     payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
-    response_status: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    response_body: Mapped[str | None] = mapped_column(Text, nullable=True)
-    response_time_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    response_status: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    response_body: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    response_time_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     attempt_count: Mapped[int] = mapped_column(Integer, default=1)
     success: Mapped[bool] = mapped_column(Boolean, default=False)
-    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=False
     )

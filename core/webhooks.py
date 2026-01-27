@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 Webhook delivery service for event notifications.
 """
@@ -6,7 +7,7 @@ import hashlib
 import hmac
 import json
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 from uuid import UUID
 
 import httpx
@@ -209,7 +210,7 @@ async def get_webhook_deliveries(
 async def retry_delivery(
     delivery_id: UUID,
     db: AsyncSession,
-) -> WebhookDelivery | None:
+) -> Optional[WebhookDelivery]:
     """Retry a failed webhook delivery."""
     # Get delivery
     query = (

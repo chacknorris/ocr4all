@@ -1,3 +1,4 @@
+from __future__ import annotations
 from models.database import Base, get_db, init_db, async_session, engine
 from models.document import (
     Document,

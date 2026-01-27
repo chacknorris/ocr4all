@@ -1,3 +1,4 @@
+from __future__ import annotations
 from api.routes.documents import router as documents_router
 from api.routes.upload import router as upload_router
 from api.routes.health import router as health_router

@@ -1,4 +1,6 @@
+from __future__ import annotations
 from datetime import datetime
+from typing import Optional, List
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -11,8 +13,8 @@ class DocumentCreate(BaseModel):
 
 
 class DocumentUpdate(BaseModel):
-    doc_type: DocumentType | None = None
-    status: DocumentStatus | None = None
+    doc_type: Optional[DocumentType] = None
+    status: Optional[DocumentStatus] = None
 
 
 class OCRResultResponse(BaseModel):
@@ -21,9 +23,9 @@ class OCRResultResponse(BaseModel):
     id: UUID
     page_number: int
     raw_text: str
-    confidence: float | None
-    processing_time_ms: int | None
-    image_path: str | None
+    confidence: Optional[float] = None
+    processing_time_ms: Optional[int] = None
+    image_path: Optional[str] = None
     created_at: datetime
 
 
@@ -32,11 +34,11 @@ class ExtractionResponse(BaseModel):
 
     id: UUID
     field_name: str
-    extracted_value: str | None
-    confidence: float | None
+    extracted_value: Optional[str] = None
+    confidence: Optional[float] = None
     manually_corrected: bool
-    corrected_value: str | None
-    source_page: int | None
+    corrected_value: Optional[str] = None
+    source_page: Optional[int] = None
     extraction_method: str = "regex"
     created_at: datetime
     updated_at: datetime
@@ -57,19 +59,19 @@ class DocumentResponse(BaseModel):
     doc_type: DocumentType
     status: DocumentStatus
     page_count: int
-    error_message: str | None
+    error_message: Optional[str] = None
     created_at: datetime
     updated_at: datetime
-    processed_at: datetime | None
+    processed_at: Optional[datetime] = None
 
 
 class DocumentDetailResponse(DocumentResponse):
-    ocr_results: list[OCRResultResponse] = []
-    extractions: list[ExtractionResponse] = []
+    ocr_results: List[OCRResultResponse] = []
+    extractions: List[ExtractionResponse] = []
 
 
 class DocumentListResponse(BaseModel):
-    items: list[DocumentResponse]
+    items: List[DocumentResponse]
     total: int
     page: int
     page_size: int

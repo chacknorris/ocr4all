@@ -1,8 +1,9 @@
+from __future__ import annotations
 """
 Authentication and authorization service.
 """
 from datetime import datetime, timedelta
-from typing import Annotated
+from typing import Annotated, Optional
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Security, status
@@ -21,15 +22,15 @@ class AuthContext:
 
     def __init__(
         self,
-        api_key: ApiKey | None = None,
-        organization: Organization | None = None,
+        api_key: Optional[ApiKey] = None,
+        organization: Optional[Organization] = None,
     ):
         self.api_key = api_key
         self.organization = organization
         self.is_authenticated = api_key is not None
 
     @property
-    def org_id(self) -> UUID | None:
+    def org_id(self) -> Optional[UUID]:
         return self.organization.id if self.organization else None
 
     def has_scope(self, scope: str) -> bool:
@@ -39,9 +40,9 @@ class AuthContext:
 
 
 async def get_api_key(
-    api_key: str | None = Security(api_key_header),
+    api_key: Optional[str] = Security(api_key_header),
     db: AsyncSession = Depends(get_db),
-) -> ApiKey | None:
+) -> Optional[ApiKey]:
     """Validate API key and return the key object."""
     if not api_key:
         return None
@@ -79,7 +80,7 @@ async def get_api_key(
 
 
 async def get_auth_context(
-    api_key: ApiKey | None = Depends(get_api_key),
+    api_key: Optional[ApiKey] = Depends(get_api_key),
     db: AsyncSession = Depends(get_db),
 ) -> AuthContext:
     """Get authentication context for the current request."""
@@ -185,8 +186,8 @@ async def log_api_usage(
     method: str,
     status_code: int,
     response_time_ms: int,
-    ip_address: str | None,
-    user_agent: str | None,
+    ip_address: Optional[str],
+    user_agent: Optional[str],
     db: AsyncSession,
 ):
     """Log API usage for analytics and rate limiting."""

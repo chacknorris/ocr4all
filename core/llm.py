@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 LLM integration for complex field extraction.
 Supports local Ollama and external APIs (OpenAI-compatible).
@@ -5,7 +6,7 @@ Supports local Ollama and external APIs (OpenAI-compatible).
 import json
 import re
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Optional
 
 import httpx
 
@@ -19,7 +20,7 @@ class LLMConfig:
     provider: str = "ollama"  # "ollama", "openai", "anthropic"
     model: str = "llama3.2"
     base_url: str = "http://localhost:11434"
-    api_key: str | None = None
+    api_key: Optional[str] = None
     temperature: float = 0.1
     max_tokens: int = 1000
     timeout: int = 60
@@ -108,7 +109,7 @@ Responde con JSON:"""
 class LLMExtractor:
     """LLM-based field extractor."""
 
-    def __init__(self, config: LLMConfig | None = None):
+    def __init__(self, config: Optional[LLMConfig] = None):
         self.config = config or LLMConfig()
         self.client = httpx.AsyncClient(timeout=self.config.timeout)
 
@@ -265,7 +266,7 @@ class LLMExtractor:
 async def extract_with_llm(
     text: str,
     doc_type: str = "default",
-    config: LLMConfig | None = None,
+    config: Optional[LLMConfig] = None,
 ) -> dict[str, Any]:
     """
     Convenience function to extract fields using LLM.
