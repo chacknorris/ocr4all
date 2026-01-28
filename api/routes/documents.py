@@ -3,7 +3,7 @@ from typing import Optional, List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -216,10 +216,10 @@ async def reprocess_document(
 
     # Clear existing results
     await db.execute(
-        select(OCRResult).where(OCRResult.document_id == document_id).delete()
+        delete(OCRResult).where(OCRResult.document_id == document_id)
     )
     await db.execute(
-        select(Extraction).where(Extraction.document_id == document_id).delete()
+        delete(Extraction).where(Extraction.document_id == document_id)
     )
 
     document.status = DocumentStatus.PENDING

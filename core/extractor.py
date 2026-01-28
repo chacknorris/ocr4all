@@ -59,18 +59,57 @@ def normalize_date(value: str) -> str:
     if not value:
         return value
 
-    # Try common Chilean formats
+    # Limpiar espacios
+    value = value.strip()
+
+    # Meses en español -> número
+    MESES = {
+        "ene": "01", "enero": "01",
+        "feb": "02", "febrero": "02",
+        "mar": "03", "marzo": "03",
+        "abr": "04", "abril": "04",
+        "may": "05", "mayo": "05",
+        "jun": "06", "junio": "06",
+        "jul": "07", "julio": "07",
+        "ago": "08", "agosto": "08",
+        "sep": "09", "sept": "09", "septiembre": "09",
+        "oct": "10", "octubre": "10",
+        "nov": "11", "noviembre": "11",
+        "dic": "12", "diciembre": "12",
+    }
+
+    # Try common formats
     patterns = [
-        (r"(\d{2})[/-](\d{2})[/-](\d{4})", r"\3-\2-\1"),  # DD/MM/YYYY -> YYYY-MM-DD
-        (r"(\d{2})[/-](\d{2})[/-](\d{2})", lambda m: f"20{m.group(3)}-{m.group(2)}-{m.group(1)}"),  # DD/MM/YY
+        # YYYY-MM-DD (ya normalizado)
+        (r"^(\d{4})-(\d{2})-(\d{2})$", lambda m: f"{m.group(1)}-{m.group(2)}-{m.group(3)}"),
+        # DD/MM/YYYY o DD-MM-YYYY
+        (r"^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$",
+         lambda m: f"{m.group(3)}-{m.group(2).zfill(2)}-{m.group(1).zfill(2)}"),
+        # DD/MM/YY o DD-MM-YY
+        (r"^(\d{1,2})[/-](\d{1,2})[/-](\d{2})$",
+         lambda m: f"20{m.group(3)}-{m.group(2).zfill(2)}-{m.group(1).zfill(2)}"),
     ]
 
     for pattern, replacement in patterns:
         match = re.match(pattern, value)
         if match:
-            if callable(replacement):
-                return replacement(match)
-            return re.sub(pattern, replacement, value)
+            return replacement(match)
+
+    # Intentar formato con mes en texto: "06 de abril de 2021" o "6 abril 2021"
+    mes_pattern = r"(\d{1,2})\s*(?:de\s+)?([a-zA-Z]+)\s*(?:de\s+)?(\d{2,4})"
+    match = re.match(mes_pattern, value, re.IGNORECASE)
+    if match:
+        dia = match.group(1).zfill(2)
+        mes_texto = match.group(2).lower()
+        año = match.group(3)
+
+        if len(año) == 2:
+            año = f"20{año}"
+
+        # Buscar el mes
+        for mes_key, mes_num in MESES.items():
+            if mes_texto.startswith(mes_key):
+                return f"{año}-{mes_num}-{dia}"
 
     return value
 
@@ -82,15 +121,127 @@ POST_PROCESSORS = {
 }
 
 
+# =============================================================================
+# PATRONES INTELIGENTES DE FALLBACK
+# =============================================================================
+
+# Patrones de fecha (ordenados por especificidad)
+DATE_PATTERNS = [
+    # Con etiqueta explícita (mayor confianza)
+    (r"FECHA\s*(?:DE\s*)?(?:EMISI[OÓ]N)?[:\s]*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})", 0.95),
+    (r"FECHA[:\s]*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})", 0.95),
+    (r"FEC\.?\s*EMIS\.?[:\s]*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})", 0.90),
+    # Formato ISO
+    (r"(\d{4}-\d{2}-\d{2})", 0.85),
+    # Fecha con mes en texto
+    (r"(\d{1,2}\s+(?:de\s+)?(?:ene(?:ro)?|feb(?:rero)?|mar(?:zo)?|abr(?:il)?|may(?:o)?|jun(?:io)?|jul(?:io)?|ago(?:sto)?|sep(?:tiembre)?|oct(?:ubre)?|nov(?:iembre)?|dic(?:iembre)?)\s+(?:de\s+)?(?:20)?\d{2})", 0.85),
+    # Fallback: cualquier fecha DD-MM-YYYY o DD/MM/YYYY
+    (r"(\d{1,2}[/-]\d{1,2}[/-](?:19|20)\d{2})", 0.75),
+    # Fallback: fecha corta DD-MM-YY
+    (r"(\d{1,2}[/-]\d{1,2}[/-]\d{2})(?!\d)", 0.70),
+]
+
+# Patrones de montos/totales (ordenados por especificidad)
+CURRENCY_PATTERNS = [
+    # Con etiqueta explícita
+    (r"TOTAL\s*(?:A\s*PAGAR)?[:\s]*\$?\s*([\d.,]+)", 0.95),
+    (r"TOTAL[:\s]*\$?\s*([\d.,]+)", 0.95),
+    (r"MONTO\s*TOTAL[:\s]*\$?\s*([\d.,]+)", 0.95),
+    (r"VALOR\s*TOTAL[:\s]*\$?\s*([\d.,]+)", 0.90),
+    (r"IMPORTE\s*TOTAL[:\s]*\$?\s*([\d.,]+)", 0.90),
+    # Neto/IVA
+    (r"(?:MONTO\s*)?NETO[:\s]*\$?\s*([\d.,]+)", 0.90),
+    (r"I\.?V\.?A\.?\s*(?:\(\d+%\))?[:\s]*\$?\s*([\d.,]+)", 0.90),
+    (r"SUBTOTAL[:\s]*\$?\s*([\d.,]+)", 0.85),
+    # Fallback: monto con símbolo $
+    (r"\$\s*([\d.,]{3,})", 0.70),
+]
+
+# Patrones de RUT
+RUT_PATTERNS = [
+    # Con etiqueta
+    (r"R\.?U\.?T\.?\s*(?:EMISOR)?[:\s]*(\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK])", 0.95),
+    (r"RUT[:\s]*(\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK])", 0.95),
+    # Fallback: formato RUT sin etiqueta
+    (r"(\d{1,2}\.\d{3}\.\d{3}-[\dkK])", 0.85),
+    (r"(\d{7,8}-[\dkK])", 0.75),
+]
+
+# Patrones de número de documento
+DOC_NUMBER_PATTERNS = [
+    (r"(?:BOLETA|FACTURA|GU[IÍ]A)\s*(?:ELECTR[OÓ]NICA)?\s*N[°º]?\s*[:\s]*(\d+)", 0.95),
+    (r"N[°º]\s*(?:BOLETA|FACTURA|DOCUMENTO)?[:\s]*(\d+)", 0.90),
+    (r"FOLIO[:\s]*(\d+)", 0.90),
+    (r"DOC(?:UMENTO)?\.?\s*N[°º]?[:\s]*(\d+)", 0.85),
+]
+
+
+def extract_with_fallback(
+    text: str,
+    patterns: list[tuple[str, float]],
+    post_processor: Optional[str] = None,
+) -> Tuple[Optional[str], float]:
+    """
+    Intenta extraer un valor usando múltiples patrones en orden de prioridad.
+
+    Args:
+        text: Texto OCR
+        patterns: Lista de (patrón_regex, confianza_base)
+        post_processor: Nombre del post-procesador a aplicar
+
+    Returns:
+        (valor_extraído, confianza) o (None, 0.0)
+    """
+    for pattern, base_confidence in patterns:
+        try:
+            match = re.search(pattern, text, re.IGNORECASE | re.MULTILINE)
+            if match:
+                value = match.group(1).strip()
+                if value:
+                    # Aplicar post-procesamiento si existe
+                    if post_processor and post_processor in POST_PROCESSORS:
+                        value = POST_PROCESSORS[post_processor](value)
+                    return value, base_confidence
+        except re.error:
+            continue
+
+    return None, 0.0
+
+
+def smart_extract_date(text: str) -> Tuple[Optional[str], float]:
+    """Extrae fecha usando patrones inteligentes con fallback."""
+    return extract_with_fallback(text, DATE_PATTERNS, "normalize_date")
+
+
+def smart_extract_total(text: str) -> Tuple[Optional[str], float]:
+    """Extrae monto total usando patrones inteligentes con fallback."""
+    return extract_with_fallback(text, CURRENCY_PATTERNS, "normalize_currency")
+
+
+def smart_extract_rut(text: str) -> Tuple[Optional[str], float]:
+    """Extrae RUT usando patrones inteligentes con fallback."""
+    return extract_with_fallback(text, RUT_PATTERNS, "normalize_rut")
+
+
+def smart_extract_doc_number(text: str) -> Tuple[Optional[str], float]:
+    """Extrae número de documento usando patrones inteligentes."""
+    return extract_with_fallback(text, DOC_NUMBER_PATTERNS, None)
+
+
 def extract_field(
     text: str,
     pattern: str,
     field_type: FieldType = FieldType.TEXT,
     flags: str = "IGNORECASE",
     post_processing: Optional[str] = None,
+    field_name: Optional[str] = None,
+    use_fallback: bool = True,
 ) -> Tuple[Optional[str], float]:
     """
     Extract a single field from text using regex pattern.
+
+    Si el patrón principal no encuentra el valor y use_fallback=True,
+    intenta usar patrones inteligentes basados en el tipo de campo.
 
     Returns:
         Tuple of (extracted_value, confidence)
@@ -107,23 +258,64 @@ def extract_field(
     try:
         match = re.search(pattern, text, re_flags)
     except re.error:
-        return None, 0.0
+        match = None
 
-    if not match:
-        return None, 0.0
+    if match:
+        # Get captured group or full match
+        value = match.group(1) if match.groups() else match.group(0)
+        value = value.strip()
 
-    # Get captured group or full match
-    value = match.group(1) if match.groups() else match.group(0)
-    value = value.strip()
+        # Apply post-processing
+        if post_processing and post_processing in POST_PROCESSORS:
+            value = POST_PROCESSORS[post_processing](value)
 
-    # Apply post-processing
-    if post_processing and post_processing in POST_PROCESSORS:
-        value = POST_PROCESSORS[post_processing](value)
+        # Calculate confidence based on field type validation
+        confidence = _calculate_confidence(value, field_type)
+        return value, confidence
 
-    # Calculate confidence based on field type validation
-    confidence = _calculate_confidence(value, field_type)
+    # === FALLBACK: Si el patrón principal no encontró nada ===
+    if use_fallback:
+        fallback_value, fallback_conf = _try_smart_fallback(
+            text, field_type, field_name
+        )
+        if fallback_value:
+            return fallback_value, fallback_conf
 
-    return value, confidence
+    return None, 0.0
+
+
+def _try_smart_fallback(
+    text: str,
+    field_type: FieldType,
+    field_name: Optional[str] = None,
+) -> Tuple[Optional[str], float]:
+    """
+    Intenta extraer el campo usando patrones inteligentes de fallback.
+
+    Esto se activa cuando el patrón del template no encuentra el valor.
+    """
+    # Determinar qué tipo de extracción usar
+    field_name_lower = (field_name or "").lower()
+
+    # Fecha
+    if field_type == FieldType.DATE or "fecha" in field_name_lower:
+        return smart_extract_date(text)
+
+    # Montos/Total
+    if field_type == FieldType.CURRENCY or any(
+        kw in field_name_lower for kw in ["total", "monto", "neto", "iva", "subtotal"]
+    ):
+        return smart_extract_total(text)
+
+    # RUT
+    if field_type == FieldType.RUT or "rut" in field_name_lower:
+        return smart_extract_rut(text)
+
+    # Número de documento
+    if any(kw in field_name_lower for kw in ["numero", "folio", "boleta", "factura"]):
+        return smart_extract_doc_number(text)
+
+    return None, 0.0
 
 
 def _calculate_confidence(value: str, field_type: FieldType) -> float:
@@ -164,6 +356,7 @@ def _calculate_confidence(value: str, field_type: FieldType) -> float:
 def extract_with_template(
     text: str,
     template_fields: list[dict],
+    use_fallback: bool = True,
 ) -> list[ExtractedField]:
     """
     Extract all fields defined in a template.
@@ -176,6 +369,7 @@ def extract_with_template(
             - field_type: FieldType enum value
             - pattern_flags: Regex flags string
             - post_processing: Optional post-processor name
+        use_fallback: Si True, usa patrones inteligentes cuando el patrón principal falla
 
     Returns:
         List of ExtractedField results
@@ -183,16 +377,20 @@ def extract_with_template(
     results = []
 
     for field_def in template_fields:
+        field_name = field_def["name"]
+
         value, confidence = extract_field(
             text=text,
             pattern=field_def["pattern"],
             field_type=FieldType(field_def.get("field_type", "text")),
             flags=field_def.get("pattern_flags", "IGNORECASE"),
             post_processing=field_def.get("post_processing"),
+            field_name=field_name,
+            use_fallback=use_fallback,
         )
 
         results.append(ExtractedField(
-            field_name=field_def["name"],
+            field_name=field_name,
             value=value,
             confidence=confidence,
         ))
